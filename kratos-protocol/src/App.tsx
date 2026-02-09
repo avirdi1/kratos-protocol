@@ -1,47 +1,37 @@
-// import { useState } from 'react'
-// import reactLogo from './assets/react.svg'
-// import viteLogo from '/vite.svg'
-// import './App.css'
+import { Routes, Route, Link } from "react-router-dom";
+import Home from "./pages/Home";
+import Workouts from "./pages/Workouts";
+import Profile from "./pages/Profile";
+import Login from "./pages/Login";
 
-// function App() {
-//   const [count, setCount] = useState(0)
-
-//   return (
-//     <>
-//       <div>
-//         <a href="https://vite.dev" target="_blank">
-//           <img src={viteLogo} className="logo" alt="Vite logo" />
-//         </a>
-//         <a href="https://react.dev" target="_blank">
-//           <img src={reactLogo} className="logo react" alt="React logo" />
-//         </a>
-//       </div>
-//       <h1>Vite + React</h1>
-//       <div className="card">
-//         <button onClick={() => setCount((count) => count + 1)}>
-//           count is {count}
-//         </button>
-//         <p>
-//           Edit <code>src/App.tsx</code> and save to test HMR
-//         </p>
-//       </div>
-//       <p className="read-the-docs">
-//         Click on the Vite and React logos to learn more
-//       </p>
-//     </>
-//   )
-// }
-
-// export default App
-
-function App() {
+export default function App() {
   return (
-    <div style={{ padding: 20 }}>
-      <h1>Kratos Protocol</h1>
-      <p>Mobile-friendly gym logging app</p>
+    <div className="app">
+      <header className="topbar">
+        <div className="brand"><Link to="/">Kratos</Link></div>
+        <nav className="nav">
+          <Link to="/workouts">Workouts</Link>
+          <Link to="/profile">Profile</Link>
+          <Link to="/login">Sign in</Link>
+        </nav>
+      </header>
+
+      <main className="main">
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/workouts" element={<Workouts />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/login" element={<Login />} />
+        </Routes>
+      </main>
+
+      <footer className="footer">
+        <Link to="/">Home</Link>
+        <Link to="/workouts">Workouts</Link>
+        <Link to="/profile">Profile</Link>
+      </footer>
     </div>
   );
 }
 
-export default App;
 
