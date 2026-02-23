@@ -31,3 +31,9 @@ dist-ssr
 #caches
 .cache
 .vite
+
+# Internal / tooling docs — not for repo
+CLAUDE.md
+todo.md
+TECHNICAL.md
+.claude/
