@@ -1,8 +1,41 @@
-import { Routes, Route, Link } from "react-router-dom";
+import { Routes, Route, Link, Navigate, useNavigate } from "react-router-dom";
 import Home from "./pages/Home";
 import Workouts from "./pages/Workouts";
 import Profile from "./pages/Profile";
 import Login from "./pages/Login";
+import { useAuth } from "./context/AuthContext";
+
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth();
+  if (loading) return null;
+  return user ? <>{children}</> : <Navigate to="/login" replace />;
+}
+
+function Nav() {
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/login");
+  };
+
+  return (
+    <nav className="flex gap-6 items-center">
+      {user ? (
+        <>
+          <Link to="/workouts" className="hover:text-kratos-blue transition-colors">Workouts</Link>
+          <Link to="/profile" className="hover:text-kratos-blue transition-colors">Profile</Link>
+          <button onClick={handleSignOut} className="hover:text-kratos-blue transition-colors text-kratos-text-dim text-sm">
+            Sign out
+          </button>
+        </>
+      ) : (
+        <Link to="/login" className="hover:text-kratos-blue transition-colors">Sign in</Link>
+      )}
+    </nav>
+  );
+}
 
 export default function App() {
   return (
@@ -12,21 +45,17 @@ export default function App() {
           <div className="text-xl font-bold">
             <Link to="/" className="hover:text-kratos-blue">Kratos</Link>
           </div>
-          <nav className="flex gap-6">
-            <Link to="/workouts" className="hover:text-kratos-blue transition-colors">Workouts</Link>
-            <Link to="/profile" className="hover:text-kratos-blue transition-colors">Profile</Link>
-            <Link to="/login" className="hover:text-kratos-blue transition-colors">Sign in</Link>
-          </nav>
+          <Nav />
         </div>
       </header>
 
       <main className="flex-1 px-6 py-8">
         <div className="max-w-7xl mx-auto w-full">
           <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/workouts" element={<Workouts />} />
-            <Route path="/profile" element={<Profile />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+            <Route path="/workouts" element={<ProtectedRoute><Workouts /></ProtectedRoute>} />
+            <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           </Routes>
         </div>
       </main>

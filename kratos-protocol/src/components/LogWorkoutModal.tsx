@@ -98,7 +98,7 @@ export default function LogWorkoutModal({ onSave, onClose, prefillPlan, editLog 
     if (exercises.length === 0) return;
     const log: WorkoutLog = {
       // preserve ID when editing so updateLog replaces the right entry
-      id: editLog?.id ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      id: editLog?.id ?? crypto.randomUUID(),
       date,
       type: dayType,
       planId: editLog?.planId ?? prefillPlan?.id,

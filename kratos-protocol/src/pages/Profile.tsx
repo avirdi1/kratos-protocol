@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useWorkoutLog } from '../hooks/useWorkoutLog';
+import { useAuth } from '../context/AuthContext';
 
 const TYPE_COLOR: Record<string, string> = {
   Push:  'bg-blue-600',
@@ -17,10 +18,14 @@ function formatDate(iso: string): string {
 
 export default function Profile() {
   const { logs, getStreak, getTotalVolume } = useWorkoutLog();
+  const { user } = useAuth();
+
+  const defaultEmail = user?.email ?? '';
+  const defaultName = user?.user_metadata?.full_name ?? defaultEmail.split('@')[0] ?? 'User';
 
   const [editing, setEditing] = useState(false);
-  const [name, setName] = useState('Demo User');
-  const [email, setEmail] = useState('demo@kratos.app');
+  const [name, setName] = useState(defaultName);
+  const [email, setEmail] = useState(defaultEmail);
   const [draftName, setDraftName] = useState(name);
   const [draftEmail, setDraftEmail] = useState(email);
 
@@ -45,7 +50,7 @@ export default function Profile() {
     setEditing(false);
   }
 
-  const initials = name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+  const initials = name.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase();
   const memberSince = logs.length > 0
     ? new Date(Math.min(...logs.map(l => new Date(l.date).getTime()))).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
     : 'No sessions yet';
