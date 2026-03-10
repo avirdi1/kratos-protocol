@@ -22,13 +22,6 @@ function formatRestTime(seconds: number): string {
   return seconds >= 60 ? `${seconds / 60} min` : `${seconds}s`;
 }
 
-function totalVolume(log: WorkoutLog): number {
-  return log.exercises.reduce((sum, ex) =>
-    sum + ex.sets.reduce((s, set) => {
-      const w = set.unit === 'kg' ? set.weight * 2.205 : set.weight;
-      return s + w * set.reps;
-    }, 0), 0);
-}
 
 const TYPE_STYLE: Record<string, { badge: string; border: string; dot: string }> = {
   Push:  { badge: 'bg-blue-600',   border: 'border-blue-600/40',   dot: 'bg-blue-500'   },
@@ -101,8 +94,6 @@ function SessionCard({
 }) {
   const [expanded, setExpanded] = useState(false);
   const style = TYPE_STYLE[log.type] ?? TYPE_STYLE.Other;
-  const vol = totalVolume(log);
-
   return (
     <div className={`bg-kratos-darker border ${style.border} rounded-xl overflow-hidden transition-all`}>
       {/* Summary row */}
@@ -120,7 +111,6 @@ function SessionCard({
           </div>
           <div className="text-kratos-text-dim text-sm mt-0.5">
             {formatDisplayDate(log.date)} · {log.exercises.length} exercise{log.exercises.length !== 1 ? 's' : ''}
-            {vol > 0 && ` · ${Math.round(vol).toLocaleString()} lbs`}
           </div>
         </div>
         <span className="text-kratos-text-dim text-lg shrink-0">{expanded ? '▲' : '▼'}</span>

@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useWorkoutLog } from '../hooks/useWorkoutLog';
 import LogWorkoutModal from '../components/LogWorkoutModal';
-import type { WorkoutLog } from '../data/types';
 
 function formatDisplayDate(iso: string): string {
   return new Date(iso + 'T00:00:00').toLocaleDateString('en-US', {
@@ -10,13 +9,6 @@ function formatDisplayDate(iso: string): string {
   });
 }
 
-function totalVolume(log: WorkoutLog): number {
-  return log.exercises.reduce((sum, ex) =>
-    sum + ex.sets.reduce((s, set) => {
-      const w = set.unit === 'kg' ? set.weight * 2.205 : set.weight;
-      return s + w * set.reps;
-    }, 0), 0);
-}
 
 const TYPE_STYLE: Record<string, string> = {
   Push:  'bg-blue-600',
@@ -162,7 +154,6 @@ export default function Home() {
         ) : (
           <div className="space-y-3">
             {recentLogs.map(log => {
-              const vol = totalVolume(log);
               const badge = TYPE_STYLE[log.type] ?? TYPE_STYLE.Other;
               return (
                 <div key={log.id} className="bg-kratos-darker border border-kratos-border rounded-xl px-5 py-4 flex items-center gap-4">
@@ -173,7 +164,6 @@ export default function Home() {
                     <p className="font-semibold">{log.planName ?? `${log.type} Day`}</p>
                     <p className="text-kratos-text-dim text-sm">
                       {formatDisplayDate(log.date)} · {log.exercises.length} exercise{log.exercises.length !== 1 ? 's' : ''}
-                      {vol > 0 && ` · ${Math.round(vol).toLocaleString()} lbs`}
                     </p>
                   </div>
                   <Link to="/workouts" className="text-kratos-text-dim hover:text-kratos-blue text-sm transition-colors">

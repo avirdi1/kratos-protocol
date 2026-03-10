@@ -164,11 +164,6 @@ export default function Profile() {
           <div className="space-y-0">
             {recentLogs.map((log, i) => {
               const badge = TYPE_COLOR[log.type] ?? TYPE_COLOR.Other;
-              const vol = log.exercises.reduce((sum, ex) =>
-                sum + ex.sets.reduce((s, set) => {
-                  const w = set.unit === 'kg' ? set.weight * 2.205 : set.weight;
-                  return s + w * set.reps;
-                }, 0), 0);
               return (
                 <div
                   key={log.id}
@@ -182,7 +177,6 @@ export default function Profile() {
                       <div className="font-medium">{log.planName ?? `${log.type} Day`}</div>
                       <div className="text-sm text-kratos-text-dim">
                         {formatDate(log.date)}
-                        {vol > 0 && ` · ${Math.round(vol).toLocaleString()} lbs`}
                       </div>
                     </div>
                   </div>
