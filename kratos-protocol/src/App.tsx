@@ -3,6 +3,7 @@ import Home from "./pages/Home";
 import Workouts from "./pages/Workouts";
 import Profile from "./pages/Profile";
 import Login from "./pages/Login";
+import AICoach from "./pages/AICoach";
 import { useAuth } from "./context/AuthContext";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -25,6 +26,7 @@ function Nav() {
       {user ? (
         <>
           <Link to="/workouts" className="hover:text-kratos-blue transition-colors">Workouts</Link>
+          <Link to="/coach" className="hover:text-kratos-blue transition-colors">AI Coach</Link>
           <Link to="/profile" className="hover:text-kratos-blue transition-colors">Profile</Link>
           <button onClick={handleSignOut} className="hover:text-kratos-blue transition-colors text-kratos-text-dim text-sm">
             Sign out
@@ -55,6 +57,7 @@ export default function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
             <Route path="/workouts" element={<ProtectedRoute><Workouts /></ProtectedRoute>} />
+            <Route path="/coach" element={<ProtectedRoute><AICoach /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           </Routes>
         </div>
@@ -64,6 +67,7 @@ export default function App() {
         <nav className="max-w-7xl mx-auto flex justify-center gap-6">
           <Link to="/" className="text-sm hover:text-kratos-blue transition-colors">Home</Link>
           <Link to="/workouts" className="text-sm hover:text-kratos-blue transition-colors">Workouts</Link>
+          <Link to="/coach" className="text-sm hover:text-kratos-blue transition-colors">AI Coach</Link>
           <Link to="/profile" className="text-sm hover:text-kratos-blue transition-colors">Profile</Link>
         </nav>
       </footer>

@@ -1,9 +1,13 @@
 import { useState } from 'react';
+import { useAuth } from '../context/AuthContext';
 import { useWorkoutLog } from '../hooks/useWorkoutLog';
 import { useCustomPlans } from '../hooks/useCustomPlans';
+import { useChallenges } from '../hooks/useChallenges';
+import type { ChallengeWithDetails } from '../hooks/useChallenges';
 import LogWorkoutModal from '../components/LogWorkoutModal';
 import CreatePlanModal from '../components/CreatePlanModal';
-import { BEGINNER_PPL } from '../data/workoutPlans';
+import ChallengeModal from '../components/ChallengeModal';
+import { BEGINNER_PPL, EXERCISES } from '../data/workoutPlans';
 import type { WorkoutLog, WorkoutPlan } from '../data/types';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -210,25 +214,217 @@ function PlanCard({ plan, onUse }: { plan: WorkoutPlan; onUse: (plan: WorkoutPla
   );
 }
 
+// ── Challenge Card ────────────────────────────────────────────────────────────
+
+function scoreColor(score: number): string {
+  if (score >= 1.05) return 'text-green-400';
+  if (score <= 0.95) return 'text-red-400';
+  return 'text-kratos-text-dim';
+}
+
+function ChallengeCard({
+  challenge,
+  currentUserId,
+  onSubmit,
+  onDelete,
+}: {
+  challenge: ChallengeWithDetails;
+  currentUserId: string;
+  onSubmit: (c: ChallengeWithDetails) => void;
+  onDelete: (id: string) => void;
+}) {
+  const isComplete = challenge.status === 'complete';
+  const [copied, setCopied] = useState(false);
+  const [expanded, setExpanded] = useState(!isComplete);
+  const hasSubmitted = !!challenge.mySubmission;
+  const isCreator = challenge.createdBy === currentUserId;
+  const typeStyle = TYPE_STYLE[challenge.workoutType] ?? TYPE_STYLE.Other;
+
+  function copyCode() {
+    navigator.clipboard.writeText(challenge.inviteCode);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  const sortedSubmissions = [...challenge.submissions].sort((a, b) => b.score - a.score);
+
+  return (
+    <div className={`bg-kratos-darker border ${isComplete ? 'border-kratos-border' : typeStyle.border} rounded-xl overflow-hidden`}>
+      <button
+        onClick={() => setExpanded(e => !e)}
+        className="w-full text-left px-5 py-4 flex items-center gap-3 hover:bg-kratos-dark/40 transition-colors"
+      >
+        <div className={`w-2 h-2 rounded-full shrink-0 ${typeStyle.dot}`} />
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-semibold">{challenge.title}</span>
+            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${typeStyle.badge} text-white`}>
+              {challenge.workoutType}
+            </span>
+            {isComplete && (
+              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-kratos-border text-kratos-text-dim">
+                COMPLETE
+              </span>
+            )}
+          </div>
+          <div className="text-kratos-text-dim text-sm mt-0.5">
+            {challenge.participants.length} participant{challenge.participants.length !== 1 ? 's' : ''}
+            {' · '}
+            {challenge.exerciseNames.slice(0, 3).join(', ')}{challenge.exerciseNames.length > 3 ? '…' : ''}
+          </div>
+        </div>
+        <span className="text-kratos-text-dim text-lg shrink-0">{expanded ? '▲' : '▼'}</span>
+      </button>
+
+      {expanded && (
+        <div className="border-t border-kratos-border px-5 py-4 space-y-4">
+
+          {/* Participants */}
+          <div>
+            <p className="text-xs font-semibold text-kratos-text-dim uppercase tracking-wider mb-2">Participants</p>
+            <div className="space-y-1.5">
+              {challenge.participants.map(p => (
+                <div key={p.userId} className="flex items-center justify-between text-sm">
+                  <span className={p.userId === currentUserId ? 'text-kratos-blue' : 'text-kratos-text'}>
+                    {p.userId === currentUserId ? 'You' : p.displayName}
+                  </span>
+                  <span className={p.status === 'submitted' ? 'text-green-400' : 'text-kratos-text-dim'}>
+                    {p.status === 'submitted' ? '✓ submitted' : '⏳ pending'}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Results */}
+          {isComplete && sortedSubmissions.length > 0 && (
+            <div>
+              <p className="text-xs font-semibold text-kratos-text-dim uppercase tracking-wider mb-2">Results</p>
+              <div className="space-y-2">
+                {sortedSubmissions.map((sub, i) => (
+                  <div key={sub.userId} className="flex items-center justify-between text-sm">
+                    <span className="flex items-center gap-2">
+                      {i === 0 && <span>🏆</span>}
+                      <span className={sub.userId === currentUserId ? 'text-kratos-blue' : 'text-kratos-text'}>
+                        {sub.userId === currentUserId ? 'You' : sub.displayName}
+                      </span>
+                    </span>
+                    <span className={`font-semibold ${scoreColor(sub.score)}`}>
+                      {Math.round(sub.score * 100)}%
+                      <span className="text-xs font-normal text-kratos-text-dim ml-1">of baseline</span>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Exercises */}
+          <div>
+            <p className="text-xs font-semibold text-kratos-text-dim uppercase tracking-wider mb-2">Exercises</p>
+            <div className="flex flex-wrap gap-1.5">
+              {challenge.exerciseNames.map(name => (
+                <span key={name} className="text-xs px-2 py-1 bg-kratos-dark border border-kratos-border rounded-md text-kratos-text-dim">
+                  {name}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* Log & Submit — prominent, full width */}
+          {!isComplete && !hasSubmitted && (
+            <button
+              onClick={() => onSubmit(challenge)}
+              className={`w-full ${typeStyle.badge} hover:opacity-90 text-white font-semibold py-2.5 rounded-lg transition-opacity`}
+            >
+              Log &amp; Submit Workout
+            </button>
+          )}
+
+          {!isComplete && hasSubmitted && (
+            <p className="text-center text-sm text-green-400">✓ You've submitted — waiting on others</p>
+          )}
+
+          {/* Footer row: invite code + delete */}
+          <div className="flex items-center justify-between pt-1 border-t border-kratos-border">
+            {!isComplete ? (
+              <div className="text-sm">
+                <span className="text-kratos-text-dim">Code: </span>
+                <span className="font-mono font-bold text-kratos-blue tracking-widest">{challenge.inviteCode}</span>
+                <button onClick={copyCode} className="ml-2 text-xs text-kratos-text-dim hover:text-kratos-text transition-colors">
+                  {copied ? 'copied!' : 'copy'}
+                </button>
+              </div>
+            ) : (
+              <span />
+            )}
+            {isCreator && (
+              <button
+                onClick={() => onDelete(challenge.id)}
+                className="text-xs text-kratos-text-dim hover:text-red-400 transition-colors"
+              >
+                Delete
+              </button>
+            )}
+          </div>
+
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function Workouts() {
+  const { user } = useAuth();
   const { logs, addLog, deleteLog, updateLog, loggedDates } = useWorkoutLog();
   const { plans: customPlans, addPlan, deletePlan } = useCustomPlans();
+  const { challenges, createChallenge, joinChallenge, submitToChallenge, deleteChallenge } = useChallenges();
+
   const [modalOpen, setModalOpen] = useState(false);
   const [createPlanOpen, setCreatePlanOpen] = useState(false);
+  const [challengeModalOpen, setChallengeModalOpen] = useState(false);
+  const [challengeModalTab, setChallengeModalTab] = useState<'create' | 'join'>('create');
   const [prefillPlan, setPrefillPlan] = useState<WorkoutPlan | undefined>();
   const [editingLog, setEditingLog] = useState<WorkoutLog | undefined>();
+  const [challengeSubmitId, setChallengeSubmitId] = useState<string | undefined>();
 
   function openLogModal(plan?: WorkoutPlan) {
     setPrefillPlan(plan);
     setEditingLog(undefined);
+    setChallengeSubmitId(undefined);
     setModalOpen(true);
   }
 
   function openEditModal(log: WorkoutLog) {
     setEditingLog(log);
     setPrefillPlan(undefined);
+    setChallengeSubmitId(undefined);
+    setModalOpen(true);
+  }
+
+  function openSubmitModal(challenge: ChallengeWithDetails) {
+    const fakePlan: WorkoutPlan = {
+      id: challenge.id,
+      name: challenge.title,
+      type: challenge.workoutType,
+      estimatedMinutes: 60,
+      description: '',
+      scheduledDay: '',
+      exercises: challenge.exerciseIds.map((id, i) => {
+        const ex = EXERCISES.find(e => e.id === id);
+        return {
+          exercise: ex ?? { id, name: challenge.exerciseNames[i], muscleGroup: '', category: challenge.workoutType },
+          sets: 3,
+          targetReps: 10,
+          restSeconds: 90,
+        };
+      }),
+    };
+    setPrefillPlan(fakePlan);
+    setChallengeSubmitId(challenge.id);
+    setEditingLog(undefined);
     setModalOpen(true);
   }
 
@@ -236,6 +432,18 @@ export default function Workouts() {
     setModalOpen(false);
     setPrefillPlan(undefined);
     setEditingLog(undefined);
+    setChallengeSubmitId(undefined);
+  }
+
+  function handleModalSave(log: WorkoutLog) {
+    if (challengeSubmitId) {
+      addLog(log);
+      submitToChallenge(challengeSubmitId, log.exercises);
+    } else if (editingLog) {
+      updateLog(log);
+    } else {
+      addLog(log);
+    }
   }
 
   return (
@@ -302,6 +510,51 @@ export default function Workouts() {
       {/* ── Week Calendar ── */}
       <WeekCalendar loggedDates={loggedDates} />
 
+      {/* ── Challenges ── */}
+      <section>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold">
+            Challenges
+            {challenges.length > 0 && (
+              <span className="text-kratos-text-dim text-sm font-normal ml-2">{challenges.length} active</span>
+            )}
+          </h2>
+          <div className="flex gap-2">
+            <button
+              onClick={() => { setChallengeModalTab('join'); setChallengeModalOpen(true); }}
+              className="border border-kratos-border text-kratos-text-dim hover:text-kratos-text text-sm px-3 py-1.5 rounded-lg transition-colors"
+            >
+              Join by Code
+            </button>
+            <button
+              onClick={() => { setChallengeModalTab('create'); setChallengeModalOpen(true); }}
+              className="bg-kratos-blue-dark hover:bg-kratos-blue-darker text-white text-sm font-semibold px-4 py-1.5 rounded-lg transition-colors"
+            >
+              + Create
+            </button>
+          </div>
+        </div>
+
+        {challenges.length === 0 ? (
+          <div className="bg-kratos-darker border border-kratos-border rounded-xl p-8 text-center">
+            <p className="text-kratos-text-dim text-sm">No challenges yet.</p>
+            <p className="text-kratos-text-dim text-xs mt-1">Create one and share the code with a friend to compete.</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {challenges.map(c => (
+              <ChallengeCard
+                key={c.id}
+                challenge={c}
+                currentUserId={user?.id ?? ''}
+                onSubmit={openSubmitModal}
+                onDelete={deleteChallenge}
+              />
+            ))}
+          </div>
+        )}
+      </section>
+
       {/* ── History ── */}
       <section>
         <h2 className="text-lg font-semibold mb-4">
@@ -330,7 +583,7 @@ export default function Workouts() {
       {/* ── Modals ── */}
       {modalOpen && (
         <LogWorkoutModal
-          onSave={editingLog ? updateLog : addLog}
+          onSave={handleModalSave}
           onClose={closeModal}
           prefillPlan={prefillPlan}
           editLog={editingLog}
@@ -340,6 +593,14 @@ export default function Workouts() {
         <CreatePlanModal
           onSave={addPlan}
           onClose={() => setCreatePlanOpen(false)}
+        />
+      )}
+      {challengeModalOpen && (
+        <ChallengeModal
+          onClose={() => setChallengeModalOpen(false)}
+          defaultTab={challengeModalTab}
+          onCreate={createChallenge}
+          onJoin={joinChallenge}
         />
       )}
     </div>
