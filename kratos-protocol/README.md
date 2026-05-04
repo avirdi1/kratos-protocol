@@ -33,34 +33,11 @@ npm install          # install dependencies
 npm run dev          # start dev server at localhost:5173
 ```
 
-Create a `.env` file in the project root:
+Create a `.env` file in the project root with your credentials:
 ```
 VITE_SUPABASE_URL=your_url
 VITE_SUPABASE_ANON_KEY=your_key
 ```
-
-### Database setup
-
-Run this in Supabase → SQL Editor:
-
-```sql
-create table workout_logs (
-  id         uuid  primary key,
-  user_id    uuid  references auth.users(id) on delete cascade not null,
-  date       date  not null,
-  type       text  not null,
-  plan_id    text,
-  plan_name  text,
-  exercises  jsonb not null default '[]',
-  notes      text
-);
-
-alter table workout_logs enable row level security;
-create policy "users manage own logs" on workout_logs
-  using (auth.uid() = user_id) with check (auth.uid() = user_id);
-```
-
-For the challenges feature, also run `supabase_social.sql` from the project root.
 
 ---
 
