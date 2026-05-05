@@ -1,11 +1,13 @@
-# Kratos Protocol
+# Kratos Protocol           
 
-Gym tracker. Log your sessions, track volume, challenge friends.
+  Gym tracker. Log your sessions, track volume, challenge friends.                            
+   
+  **View the app live now → [kratos-protocol.vercel.app](https://kratos-protocol.vercel.app)**
+                       
+  ---                                                                                         
+                       
+  ## Stack
 
-**[Live App →](https://kratos-protocol.vercel.app)**    
+  React 18 · TypeScript · Tailwind CSS · Vite · Supabase · Docker
 
-## Stack
-
-React 18 · TypeScript · Tailwind CSS · Vite · Supabase · Docker
-
-See [`kratos-protocol/README.md`](./kratos-protocol/README.md) for setup.
+  See [`kratos-protocol/README.md`](./kratos-protocol/README.md) for setup.    
