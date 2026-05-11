@@ -4,12 +4,12 @@ import { useChatSessions } from '../hooks/useChatSessions';
 import type { ChatMessage } from '../hooks/useChatSessions';
 import type { WorkoutLog } from '../data/types';
 
-const API_KEY = import.meta.env.VITE_GEMINI_API_KEY as string;
-const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`;
+const API_KEY = import.meta.env.VITE_GROQ_API_KEY as string;
+const API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
-interface GeminiContent {
-  role: 'user' | 'model';
-  parts: { text: string }[];
+interface GroqMessage {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
 }
 
 function buildWorkoutContext(logs: WorkoutLog[]): string {
@@ -112,32 +112,36 @@ async function sendMessage(
   history: ChatMessage[],
   systemInstruction: string
 ): Promise<string> {
-  const contents: GeminiContent[] = [
+  const messages: GroqMessage[] = [
+    { role: 'system', content: systemInstruction },
     ...history.map(msg => ({
-      role: (msg.role === 'user' ? 'user' : 'model') as 'user' | 'model',
-      parts: [{ text: msg.text }],
+      role: (msg.role === 'user' ? 'user' : 'assistant') as 'user' | 'assistant',
+      content: msg.text,
     })),
-    { role: 'user' as const, parts: [{ text: userText }] },
+    { role: 'user', content: userText },
   ];
 
   const res = await fetch(API_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${API_KEY}`,
+    },
     body: JSON.stringify({
-      systemInstruction: { parts: [{ text: systemInstruction }] },
-      contents,
+      model: 'llama-3.3-70b-versatile',
+      messages,
     }),
   });
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({})) as { error?: { message?: string } };
-    throw new Error(err?.error?.message ?? `Gemini API error ${res.status}`);
+    throw new Error(err?.error?.message ?? `Groq API error ${res.status}`);
   }
 
   const data = await res.json() as {
-    candidates?: { content?: { parts?: { text?: string }[] } }[];
+    choices?: { message?: { content?: string } }[];
   };
-  return data.candidates?.[0]?.content?.parts?.[0]?.text ?? 'No response received.';
+  return data.choices?.[0]?.message?.content ?? 'No response received.';
 }
 
 const SUGGESTED_PROMPTS = [
