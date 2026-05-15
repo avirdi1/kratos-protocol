@@ -1,7 +1,21 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import {
+  LineChart, Line, BarChart, Bar,
+  XAxis, YAxis, CartesianGrid, Tooltip,
+  ResponsiveContainer,
+} from 'recharts';
 import { useWorkoutLog } from '../hooks/useWorkoutLog';
 import LogWorkoutModal from '../components/LogWorkoutModal';
+
+function getWeekKey(dateStr: string): string {
+  const d = new Date(dateStr + 'T00:00:00');
+  const dow = d.getDay();
+  const diff = dow === 0 ? -6 : 1 - dow;
+  const mon = new Date(d);
+  mon.setDate(d.getDate() + diff);
+  return mon.toISOString().slice(0, 10);
+}
 
 function formatDisplayDate(iso: string): string {
   return new Date(iso + 'T00:00:00').toLocaleDateString('en-US', {
@@ -37,6 +51,19 @@ export default function Home() {
   const totalVol = getTotalVolume();
   const recentLogs = logs.slice(0, 3);
 
+  // Volume per session — last 10 sessions in chronological order
+  const volumePerSession = logs.slice(0, 10).reverse().map(log => {
+    const vol = log.exercises.reduce((t, ex) =>
+      t + ex.sets.reduce((s, set) => {
+        const w = set.unit === 'kg' ? set.weight * 2.205 : set.weight;
+        return s + w * set.reps;
+      }, 0), 0);
+    return {
+      date: new Date(log.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' }),
+      volume: Math.round(vol),
+    };
+  });
+
   // Determine which days this week have been logged
   const now = new Date();
   const day = now.getDay();
@@ -49,6 +76,15 @@ export default function Home() {
     const d = new Date(monday);
     d.setDate(monday.getDate() + i);
     return d.toISOString().slice(0, 10);
+  });
+
+  // Workouts per week — last 8 weeks
+  const weeklyWorkouts = Array.from({ length: 8 }, (_, i) => {
+    const mon = new Date(monday);
+    mon.setDate(monday.getDate() - (7 - i) * 7);
+    const key = mon.toISOString().slice(0, 10);
+    const label = mon.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' });
+    return { label, workouts: logs.filter(l => getWeekKey(l.date) === key).length };
   });
 
   return (
@@ -129,6 +165,82 @@ export default function Home() {
           })}
         </div>
       </section>
+
+      {/* ── Progress Charts ── */}
+      {logs.length > 1 && (
+        <section>
+          <h2 className="text-lg font-semibold mb-4">Progress</h2>
+          <div className="grid md:grid-cols-2 gap-4">
+
+            <div className="bg-kratos-darker border border-kratos-border rounded-xl p-5">
+              <p className="text-sm font-semibold text-kratos-text-dim mb-4">Volume per Session (lbs)</p>
+              <ResponsiveContainer width="100%" height={180}>
+                <LineChart data={volumePerSession} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                  <XAxis
+                    dataKey="date"
+                    tick={{ fill: '#94a3b8', fontSize: 11 }}
+                    axisLine={{ stroke: '#1e293b' }}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    tick={{ fill: '#94a3b8', fontSize: 11 }}
+                    axisLine={false}
+                    tickLine={false}
+                    tickFormatter={(v: number) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : `${v}`}
+                    width={36}
+                  />
+                  <Tooltip
+                    contentStyle={{ backgroundColor: '#020617', border: '1px solid #1e293b', borderRadius: '8px' }}
+                    labelStyle={{ color: '#94a3b8', fontSize: '12px' }}
+                    itemStyle={{ color: '#60a5fa', fontWeight: 600 }}
+                    formatter={(value) => [`${Number(value).toLocaleString()} lbs`, '']}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="volume"
+                    stroke="#60a5fa"
+                    strokeWidth={2}
+                    dot={{ fill: '#60a5fa', r: 3 }}
+                    activeDot={{ r: 5, fill: '#60a5fa' }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+
+            <div className="bg-kratos-darker border border-kratos-border rounded-xl p-5">
+              <p className="text-sm font-semibold text-kratos-text-dim mb-4">Workouts per Week</p>
+              <ResponsiveContainer width="100%" height={180}>
+                <BarChart data={weeklyWorkouts} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                  <XAxis
+                    dataKey="label"
+                    tick={{ fill: '#94a3b8', fontSize: 11 }}
+                    axisLine={{ stroke: '#1e293b' }}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    tick={{ fill: '#94a3b8', fontSize: 11 }}
+                    axisLine={false}
+                    tickLine={false}
+                    allowDecimals={false}
+                    width={24}
+                  />
+                  <Tooltip
+                    contentStyle={{ backgroundColor: '#020617', border: '1px solid #1e293b', borderRadius: '8px' }}
+                    labelStyle={{ color: '#94a3b8', fontSize: '12px' }}
+                    itemStyle={{ color: '#60a5fa', fontWeight: 600 }}
+                    formatter={(value) => [`${Number(value)} workout${Number(value) !== 1 ? 's' : ''}`, '']}
+                    labelFormatter={(label) => `Week of ${label}`}
+                  />
+                  <Bar dataKey="workouts" fill="#2563eb" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+
+          </div>
+        </section>
+      )}
 
       {/* ── Recent Sessions ── */}
       <section>
