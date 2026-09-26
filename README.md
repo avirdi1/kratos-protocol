@@ -2,7 +2,7 @@
 
   Gym tracker. Log your sessions, track volume, challenge friends.                            
    
-  **View the app live now → [kratos-protocol.vercel.app](https://kratos-protocol.vercel.app)**
+  ~**View the app live now → [kratos-protocol.vercel.app](https://kratos-protocol.vercel.app)**~
                        
   ---                                                                                         
                        
